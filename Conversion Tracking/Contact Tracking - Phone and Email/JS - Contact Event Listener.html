@@ -1,0 +1,192 @@
+<!--
+Script attaches a dataLayer event to all known contact links on the page.
+Code listens to click and copy events and generates event parameters based on the lists in the config section at the start.
+
+Name: JS - Contact Event Listener
+Folder: Conversion Tracking
+
+© 2019 nerdaxic / henrirantanen.fi
+-->
+
+<script>
+// ID of the container, used to fetch GTM start time
+var tracker_gtm = 'GTM-XXXXXXX';
+
+// Tracked email in international format, text used as event label
+var tracker_emailList = [
+	["firstname.secondname@domain.fi", "Billing"],
+  ["support@domain.fi", "Support"],
+  ["info@domain.fi", "Info"],
+  ["service@domain.fi", "Customer service"],
+];
+
+// Phone number in international format, text used as event label
+var tracker_phoneList = [
+	["+358000000000", "Support"],
+  ["+358111111111", "Info"],
+  ["+358222222222", "Billing"],
+  ["+358333333333", "CEO"],
+  ["+358444444444", "Consultant"],
+  ["+358555555555", "Consultant"],
+];
+
+// Event details to be generated to dataLayer
+var tracker_category = "Contact";
+var tracker_callEventAction = "Call";
+var tracker_emailEventAction = "Email";
+
+// End of configurable code.
+// ********************************************************
+// Start of program code
+
+// Default values incase not set in config
+if (tracker_category == null) {
+  var tracker_category = "Contact";
+}
+if (tracker_callEventAction == null) {
+  var tracker_callEventAction = "Call";
+}
+if (tracker_emailEventAction == null) {
+  var tracker_emailEventAction = "Email";
+}
+
+// Run install script only once per page
+if(typeof tracker_SetupTime === 'undefined'){
+	// Do not install phone tracker if phonebook is not defined
+	if( typeof tracker_phoneList != 'undefined' ){
+		// Loop through all tel-type links 
+		for(var i = 0, len = document.querySelectorAll('a[href^="tel:"]').length; i < len; i++){
+			// Install dataLayer.push event to all tel-type links
+			document.querySelectorAll('a[href^="tel:"]')[i].addEventListener('click', function (){
+
+				var tracker_url = this.href.toString();
+				var tracker_clickedNumber = tracker_url.substring(4).split(' ').join('');
+				var tracker_result;
+
+				// If the clicked phone tracker_clickedNumber is in the list of known tracker_clickedNumbers
+				for( var i = 0, len = tracker_phoneList.length; i < len; i++ ) {
+					if( tracker_phoneList[i][0] === tracker_clickedNumber ) {
+						tracker_result = tracker_phoneList[i][1];
+
+						// Create dataLayer event
+						window.dataLayer.push({
+							'event': 'Contact Event',
+							'DLContactEventCategory': tracker_category,
+							'DLContactAction': tracker_callEventAction,
+							'DLContactLabel': tracker_result
+						});
+						break;
+					}
+				}
+			});
+		}
+	}
+
+	// Do not install mail tracker if email list is not defined
+	if( typeof tracker_emailList != 'undefined' ){
+
+		// Loop through all mailto-type links 
+		for(var i = 0, len = document.querySelectorAll('a[href^="mailto:"]').length; i < len; i++){
+
+			// Install dataLayer.push event to all mailto-type links
+			document.querySelectorAll('a[href^="mailto:"]')[i].addEventListener('click', function (){
+
+				var tracker_url = this.href.toString();
+				var tracker_clickedEmail = tracker_url.substring(7).split(' ').join('');
+				var tracker_result;
+
+				if(tracker_clickedEmail.includes("@")){
+			        // Extract email with regex
+			        var regex = /^[\s]*([\w\.]{0,128}@[\w]{0,128}\.[\w]{2,3})[\s]*$/mg;
+			        m = regex.exec(tracker_clickedEmail)
+
+			        var tracker_result;
+
+					for( var i = 0, len = tracker_emailList.length; i < len; i++ ) {
+						if( tracker_emailList[i][0] === m[1] ) {
+							tracker_result = tracker_emailList[i][1];
+
+							// Contact found, push event data to dataLayer
+							window.dataLayer.push({
+								'event': 'Contact Event',
+								'DLContactEventCategory': tracker_category,
+								'DLContactAction': tracker_emailEventAction,
+								'DLContactLabel': tracker_result
+							});
+							return;
+						}
+					}
+				} 
+			});
+		}
+	}
+
+	// Only install copy tracking if some contacts are being tracked
+	if( typeof tracker_phoneList != 'undefined' || typeof tracker_emailList != 'undefined'){
+	    // Add event listener to all copy-events
+	    document.body.addEventListener('copy', function (){
+	        
+	      var tracker_selection = window.getSelection();
+	      tracker_selection = tracker_selection.toString().split(' ').join('');
+
+	      // Parse email if list of tracked emails is set
+	      if( typeof tracker_emailList != 'undefined' ){
+		      // Parse as email
+		      	if(tracker_selection.includes("@")){
+			        // Extract email with regex
+			        var regex = /^[\s]*([\w\.]{0,128}@[\w]{0,128}\.[\w]{2,3})[\s]*$/mg;
+			        m = regex.exec(tracker_selection)
+
+			        var tracker_result;
+
+					for( var i = 0, len = tracker_emailList.length; i < len; i++ ) {
+						if( tracker_emailList[i][0] === m[1] ) {
+							tracker_result = tracker_emailList[i][1];
+
+							// Contact found, push event data to dataLayer
+							window.dataLayer.push({
+							'event': 'Contact Event',
+							'DLContactEventCategory': tracker_category,
+							'DLContactAction': tracker_emailEventAction,
+							'DLContactLabel': tracker_result
+							});
+							return;
+						}
+					}
+				} 
+			} // End of email parsing
+
+			// Parse phone tracker_clickedNumbers if known phone tracker_clickedNumbers are set
+			if( typeof tracker_phoneList != 'undefined' ){
+				var regex = /^[\s]*(\+{0,1}[0-9 ]{3,30})[\s]*$/mg;
+				if(tracker_selection.match(regex)){
+					// tel found
+					m = regex.exec(tracker_selection)
+
+					var tracker_result;
+					for( var i = 0, len = tracker_phoneList.length; i < len; i++ ) {
+						if( tracker_phoneList[i][0].replace(/\D/g,'') === m[1].replace(/\D/g,'') ) {
+							tracker_result = tracker_phoneList[i][1];
+
+							window.dataLayer.push({
+								'event': 'Contact Event',
+								'DLContactEventCategory': tracker_category,
+								'DLContactAction': tracker_callEventAction,
+								'DLContactLabel': tracker_result
+							});
+							return;
+						}
+					}
+				}
+			} // End of phone parsing
+	    }) // End of copy listener
+	} // End of tracker script
+
+	// Create variable with start time of the script
+	var tracker_SetupTime = Math.floor(Date.now());
+} // End of install script
+else{
+	// If code is tried to install second time
+	console.log("Contact Event Tracker already installed on:", tracker_SetupTime);
+}
+</script>
