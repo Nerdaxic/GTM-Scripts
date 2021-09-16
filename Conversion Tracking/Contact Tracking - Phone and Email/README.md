@@ -13,7 +13,7 @@
 ### 1) Create new tag
 - **Tag name:** JS - Contact Event Listener
 - **Tag type:** Custom HTML
-- **Content:** - Copy from JS - Contact Event Listener.html
+- **Content:** - Copy from [JS - Contact Event Listener.html](https://github.com/Nerdaxic/GTM-Scripts/blob/main/Conversion%20Tracking/Contact%20Tracking%20-%20Phone%20and%20Email/JS%20-%20Contact%20Event%20Listener.html)
 - **Tigger:** - DOM Ready
 
 Edit the row:
